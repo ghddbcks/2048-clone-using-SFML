@@ -23,5 +23,8 @@
     <ClInclude Include="ConnectionIii-Rj3W.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="nanum.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
