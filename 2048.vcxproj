@@ -149,6 +149,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="blur.hpp" />
     <ClInclude Include="ConnectionIii-Rj3W.hpp" />
     <ClInclude Include="nanum.hpp" />
   </ItemGroup>

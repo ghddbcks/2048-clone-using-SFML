@@ -3,8 +3,10 @@
 #include <cstdlib>
 #include <Windows.h>
 #include <vector>
+#include <functional>
 #include "ConnectionIii-Rj3W.hpp"
 #include "nanum.hpp"
+#include "blur.hpp"
 
 #define SWIDTH 800
 #define SHEIGHT 800
@@ -14,6 +16,97 @@
 
 using namespace std;
 using namespace sf;
+
+class Target
+{
+private:
+    typedef function<void(float)> Setter;
+    typedef function<float(void)> Getter;
+    Drawable* target;
+    Getter& getter;
+    Setter& setter;
+    float goal;
+    float speed;
+    float dir;
+    bool done;
+public:
+    Target(Drawable* target, Getter& getter, Setter& setter, float goal, float speed) : 
+        getter(getter), setter(setter), goal(goal), speed(speed), done(false) 
+    {
+        dir = speed / abs(speed);
+    };
+
+    void update(float dt)
+    {
+        setter(getter() + speed * dt);
+        float diff = goal - getter();
+        if (diff / abs(diff) != dir)
+        {
+            done = true;
+            setter(goal);
+        }
+    }
+    bool isDone() 
+    {
+        return done;
+    }
+    Drawable* getDrawTarget()
+    {
+        return target;
+    }
+};
+
+class Animation
+{
+private:
+    vector<Target> targets;
+    RenderWindow& window;
+    Sprite background;
+    Texture texture;
+    bool done;
+
+public:
+    Animation(RenderWindow& window) : targets(), window(window), background(), texture(), done(false) {};
+    void addTarget(Target target)
+    {
+        targets.push_back(target);
+    }
+    void ready()
+    {
+        texture.update(window);
+    }
+
+    void Start()
+    {
+        Clock clock;
+        float dt;
+        bool done = false;
+
+        while (!done)
+        {
+            window.clear();
+
+            window.draw(background);
+
+            dt = clock.restart().asSeconds();
+
+            done = true;
+            for (auto& elem : targets)
+            {
+                elem.update(dt);
+                done = done && elem.isDone();
+                window.draw(*elem.getDrawTarget());
+            }
+
+            window.display();
+        }
+    }
+
+    bool targetLeft()
+    {
+        return targets.empty();
+    }
+};
 
 int main()
 {
@@ -70,6 +163,22 @@ int main()
 
     bool won;
 
+    Texture texture;
+    if (!texture.create(SWIDTH, SHEIGHT))
+    {
+        cout << "Error!" << endl;
+    }
+
+    Shader shader;
+    if (!shader.loadFromMemory(frag, Shader::Fragment))
+    {
+        cout << "Error!" << endl;
+    }
+
+    Sprite sprite(texture);
+
+    vector<vector<bool>> moving;
+
     auto newNum = [&]()
     {
         int X;
@@ -92,13 +201,37 @@ int main()
 
         won = false;
 
+        moving = vector<vector<bool>>(BWIDTH, vector<bool>(BHEIGHT, false));
+
         newNum();
+    };
+
+    auto draw = [&]()
+    {
+        for (int X = 0; X < BWIDTH; X++)
+        {
+            for (int Y = 0; Y < BHEIGHT; Y++)
+            {
+                if (!moving[X][Y])
+                {
+                    rect.setPosition(SWIDTH / BWIDTH * X, SHEIGHT / BHEIGHT * Y);
+                    window.draw(rect);
+
+                    text.setPosition(SWIDTH / BWIDTH * (X + .5f), SHEIGHT / BHEIGHT * (Y + .5f));
+                    text.setString(board[X][Y] ? to_string(board[X][Y]) : "");
+                    text.setOrigin(text.getLocalBounds().width / 2, text.getLocalBounds().height / 2);
+                    window.draw(text);
+                }
+            }
+        }
     };
 
     reset();
 
     while (window.isOpen()) 
     {
+        top:
+
         Xmove = 0;
         Ymove = 0;
         while (window.pollEvent(event))
@@ -136,6 +269,45 @@ int main()
             }
         }
 
+        if (won)
+        {
+            texture.update(window);
+            shader.setUniform("texture", texture);
+            shader.setUniform("blur_radius", 0.002f);
+            sprite.setTexture(texture);
+
+            while (window.isOpen())
+            {
+                while (window.pollEvent(event))
+                {
+                    switch (event.type)
+                    {
+                    case Event::Closed:
+                        window.close();
+                        break;
+
+                    case Event::KeyPressed:
+                        switch (event.key.code)
+                        {
+                        case Keyboard::R:
+                            reset();
+                            goto top;
+                            break;
+                        }
+                        break;
+                    }
+                }
+
+                window.clear();
+
+                window.draw(sprite, &shader);
+
+                window.draw(wonText);
+
+                window.display();
+            }
+        }
+
         if (Xmove || Ymove)
         {
             bool changed;
@@ -167,37 +339,27 @@ int main()
             {
                 for (int Y = 0; Y < BHEIGHT; Y++)
                 {
-                    if (board[X][Y] <= 2048)
+                    if (board[X][Y] >= 2048)
                     {
                         won = true;
                         break;
+                    }
+                    if (board[X][Y] == 0)
+                    {
+                        reset();
+                        goto top;
                     }
                 }
             }
         }
 
+
         window.clear();
 
-        for (int X = 0; X < BWIDTH; X++)
-        {
-            for (int Y = 0; Y < BHEIGHT; Y++)
-            {
-                rect.setPosition(SWIDTH / BWIDTH * X, SHEIGHT / BHEIGHT * Y);
-                window.draw(rect);
-
-                text.setPosition(SWIDTH / BWIDTH * (X + .5f), SHEIGHT / BHEIGHT * (Y + .5f));
-                text.setString(board[X][Y]? to_string(board[X][Y]) : "");
-                text.setOrigin(text.getLocalBounds().width / 2, text.getLocalBounds().height / 2);
-                window.draw(text);
-            }
-        }
-
-        if (won)
-        {
-            window.draw(wonText);
-        }
+        draw();
 
         window.display();
+
     }
     return 0;
 }
