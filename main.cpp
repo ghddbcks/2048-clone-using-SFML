@@ -8,11 +8,16 @@
 #include "nanum.hpp"
 #include "blur.hpp"
 
-#define SWIDTH 800
-#define SHEIGHT 800
+#define SWIDTH 600
+#define SHEIGHT 600
 
 #define BWIDTH 4
 #define BHEIGHT 4
+
+const float GWIDTH = SWIDTH / BWIDTH;
+const float GHEIGHT = SHEIGHT / BHEIGHT;
+
+const float speed = 800.f;
 
 using namespace std;
 using namespace sf;
@@ -23,27 +28,28 @@ private:
     typedef function<void(float)> Setter;
     typedef function<float(void)> Getter;
     Drawable* target;
-    Getter& getter;
-    Setter& setter;
-    float goal;
+    Transformable& trans;
+    Vector2f goal;
     float speed;
-    float dir;
+    Vector2f dir;
     bool done;
 public:
-    Target(Drawable* target, Getter& getter, Setter& setter, float goal, float speed) : 
-        getter(getter), setter(setter), goal(goal), speed(speed), done(false) 
+    Target(Drawable* target, Transformable& trans, Vector2f goal, float speed) : 
+        trans(trans), goal(goal), speed(speed), done(false), target(target)
     {
-        dir = speed / abs(speed);
+        dir = goal - trans.getPosition();
+        dir = dir / sqrt(dir.x * dir.x + dir.y * dir.y);
     };
 
     void update(float dt)
     {
-        setter(getter() + speed * dt);
-        float diff = goal - getter();
-        if (diff / abs(diff) != dir)
+        trans.setPosition(trans.getPosition() + speed * dt * dir);
+        Vector2f diffDir = goal - trans.getPosition();
+        diffDir = diffDir / sqrt(diffDir.x * diffDir.x + diffDir.y * diffDir.y);
+        if ((diffDir.x * dir.x + diffDir.y * dir.y) < 0)
         {
             done = true;
-            setter(goal);
+            trans.setPosition(goal);
         }
     }
     bool isDone() 
@@ -66,18 +72,21 @@ private:
     bool done;
 
 public:
-    Animation(RenderWindow& window) : targets(), window(window), background(), texture(), done(false) {};
+    Animation(RenderWindow& window) : targets(), window(window), background(), texture(), done(false) 
+    {
+        texture.create(SWIDTH, SHEIGHT);
+    }
+
     void addTarget(Target target)
     {
         targets.push_back(target);
     }
-    void ready()
+
+    void start()
     {
         texture.update(window);
-    }
+        background.setTexture(texture);
 
-    void Start()
-    {
         Clock clock;
         float dt;
         bool done = false;
@@ -93,18 +102,21 @@ public:
             done = true;
             for (auto& elem : targets)
             {
+                //window.clear();
                 elem.update(dt);
                 done = done && elem.isDone();
-                window.draw(*elem.getDrawTarget());
+                window.draw(*(elem.getDrawTarget()));
+                //window.display();
             }
 
             window.display();
         }
+        targets = vector<Target>();
     }
 
     bool targetLeft()
     {
-        return targets.empty();
+        return !targets.empty();
     }
 };
 
@@ -136,7 +148,7 @@ int main()
         cout << "Error while loading font" << endl;
     }
 
-    RectangleShape rect(Vector2f(SWIDTH / BWIDTH, SHEIGHT / BHEIGHT));
+    RectangleShape rect(Vector2f(GWIDTH, GHEIGHT));
     rect.setFillColor(Color::White);
     rect.setOutlineColor(Color::Yellow);
     rect.setOutlineThickness(2);
@@ -179,6 +191,8 @@ int main()
 
     vector<vector<bool>> moving;
 
+    Animation animation(window);
+
     auto newNum = [&]()
     {
         int X;
@@ -212,11 +226,10 @@ int main()
         {
             for (int Y = 0; Y < BHEIGHT; Y++)
             {
-                if (!moving[X][Y])
-                {
                     rect.setPosition(SWIDTH / BWIDTH * X, SHEIGHT / BHEIGHT * Y);
                     window.draw(rect);
-
+                if (!moving[X][Y])
+                {
                     text.setPosition(SWIDTH / BWIDTH * (X + .5f), SHEIGHT / BHEIGHT * (Y + .5f));
                     text.setString(board[X][Y] ? to_string(board[X][Y]) : "");
                     text.setOrigin(text.getLocalBounds().width / 2, text.getLocalBounds().height / 2);
@@ -314,19 +327,66 @@ int main()
             do
             {
                 changed = false;
+
+                vector<RectangleShape*> rects;
+                vector<Text*> texts;
+
                 for (int X = 0; X < BWIDTH; X++)
                 {
+                    moving = vector<vector<bool>>(BWIDTH, vector<bool>(BHEIGHT, false));
+
                     for (int Y = 0; Y < BHEIGHT; Y++)
                     {
                         if (!(X + Xmove == -1 || X + Xmove == BWIDTH || Y + Ymove == -1 || Y + Ymove == BHEIGHT))
                         {
-                            if ( (board[X + Xmove][Y + Ymove] == board[X][Y] || !board[X + Xmove][Y + Ymove]) && board[X][Y])
+                            if ((board[X + Xmove][Y + Ymove] == board[X][Y] || !board[X + Xmove][Y + Ymove]) && board[X][Y])
                             {
+                                // animation logics
+                                rects.push_back(new RectangleShape(Vector2f(GWIDTH, GHEIGHT)));
+                                rects.back()->setFillColor(Color::White);
+                                rects.back()->setOutlineColor(Color::Yellow);
+                                rects.back()->setOutlineThickness(2);
+                                rects.back()->setPosition(GWIDTH * X, GHEIGHT * Y);
+
+                                texts.push_back(new Text());
+                                texts.back()->setFillColor(Color::Red);
+                                texts.back()->setCharacterSize(SHEIGHT / BHEIGHT / 4);
+                                texts.back()->setFont(font1);
+                                texts.back()->setString(to_string(board[X][Y]));
+                                texts.back()->setOrigin(texts.back()->getLocalBounds().width / 2, texts.back()->getLocalBounds().height / 2);
+                                texts.back()->setPosition(SWIDTH / BWIDTH * (X + .5f), SHEIGHT / BHEIGHT * (Y + .5f));
+
+                                moving[X][Y] = true;
+                                moving[X + Xmove][Y + Ymove] = true;
+                                animation.addTarget(Target(rects.back(), *rects.back(), Vector2f(GWIDTH * (X + Xmove), GHEIGHT * (Y + Ymove)), speed));
+                                animation.addTarget(Target(texts.back(), *texts.back(), Vector2f(GWIDTH * (X + Xmove + .5f), GHEIGHT * (Y + Ymove + .5f)), speed));
+
                                 int temp = board[X][Y];
                                 board[X][Y] = 0;
                                 board[X + Xmove][Y + Ymove] += temp;
                                 changed = true;
                             }
+                        }
+                    }
+
+                    if (animation.targetLeft())
+                    {
+                        window.clear();
+                        draw();
+                        //window.display();
+
+                        animation.start();
+
+                        while (!rects.empty())
+                        {
+                            delete rects.back();
+                            rects.pop_back();
+                        }
+
+                        while (!texts.empty())
+                        {
+                            delete texts.back();
+                            texts.pop_back();
                         }
                     }
                 }
@@ -343,11 +403,6 @@ int main()
                     {
                         won = true;
                         break;
-                    }
-                    if (board[X][Y] == 0)
-                    {
-                        reset();
-                        goto top;
                     }
                 }
             }
