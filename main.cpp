@@ -25,9 +25,15 @@ const float GWIDTH = SWIDTH / BWIDTH;
 const float GHEIGHT = GWIDTH;
 
 const float speed = 1000.f;
-
 using namespace std;
 using namespace sf;
+
+const Color numberClr = Color(0xd77256ff);
+const Color tileClr = Color(0xF9F7EAff);
+const Color borderClr = Color(0xD2E0D1ff);
+const Color buttonClr = Color(0x35505eff);
+const Color textClr = Color(0x171C3aff);
+const Color backgroundClr = Color(0xd2d0d1ff);
 
 class Target
 {
@@ -151,15 +157,15 @@ void setText(Text& text, String string, int X, int Y)
 
 void resetText(Text& text, Font& font1)
 {
-    text.setFillColor(Color(0xF28A2Eff));
+    text.setFillColor(textClr);
     text.setCharacterSize(GHEIGHT / 4);
     text.setFont(font1);
 }
 
 void resetRect(RectangleShape& rect)
 {
-    rect.setFillColor(Color(0x3702E0ff));
-    rect.setOutlineColor(Color(0x210B66ff));
+    rect.setFillColor(tileClr);
+    rect.setOutlineColor(borderClr);
     rect.setOutlineThickness(BORDER);
 }
 
@@ -195,13 +201,13 @@ int main()
     resetRect(rect);
 
     RectangleShape back(Vector2f(SWIDTH, SHEIGHT));
-    back.setFillColor(Color(0x210B66ff));
+    back.setFillColor(backgroundClr);
 
     Text text;
     resetText(text, font1);
 
     Text wonText;
-    wonText.setFillColor(Color(0x01940Aff));
+    wonText.setFillColor(textClr);
     wonText.setCharacterSize(48);
     wonText.setFont(font2);
     wonText.setPosition(SWIDTH/2, SWIDTH/2);
@@ -240,10 +246,10 @@ int main()
 
     RectangleShape resetButton(Vector2f(BTWIDTH, BTHEIGHT));
     resetButton.setPosition(SWIDTH / 2 - BTWIDTH/2, SWIDTH + (SHEIGHT - SWIDTH) / 2 - BTHEIGHT / 2);
-    resetButton.setFillColor(Color(0x19E024ff));
+    resetButton.setFillColor(buttonClr);
 
     Text resetBtnTxt;
-    resetBtnTxt.setFillColor(Color(0xF28A2Eff));
+    resetBtnTxt.setFillColor(textClr);
     resetBtnTxt.setFont(font2);
     resetBtnTxt.setString(L"¿ÁΩ√¿€");
     resetBtnTxt.setCharacterSize(50);
@@ -577,7 +583,6 @@ int main()
             }
         }
 
-        cout << 1 / clock.restart().asSeconds() << endl;
 
         window.clear();
 
