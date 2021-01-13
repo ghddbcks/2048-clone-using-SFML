@@ -17,7 +17,7 @@
 const float GWIDTH = SWIDTH / BWIDTH;
 const float GHEIGHT = SHEIGHT / BHEIGHT;
 
-const float speed = 800.f;
+const float speed = 10000.f;
 
 using namespace std;
 using namespace sf;
@@ -25,8 +25,6 @@ using namespace sf;
 class Target
 {
 private:
-    typedef function<void(float)> Setter;
-    typedef function<float(void)> Getter;
     Drawable* target;
     Transformable& trans;
     Vector2f goal;
@@ -197,13 +195,37 @@ int main()
     {
         int X;
         int Y;
+        pair<int, int> newSqr;
+        vector<pair<int, int>> list;
 
-        do
+        for (int X = 0;X < BWIDTH;X++)
         {
-            X = rand() % BWIDTH;
-            Y = rand() % BHEIGHT;
-        } while (board[X][Y] != 0);
-        board[X][Y] = 2;
+            for (int Y = 0;Y < BHEIGHT;Y++)
+            {
+                if (!board[X][Y])
+                {
+                    list.push_back(make_pair(X, Y));
+                }
+            }
+        }
+
+        if (!list.size())
+        {
+            return;
+        }
+
+        newSqr = list[rand() % list.size()];
+        X = newSqr.first;
+        Y = newSqr.second;
+
+        if (rand() % 100 < 10)
+        {
+            board[X][Y] = 4;
+        }
+        else
+        {
+            board[X][Y] = 2;
+        }
     };
 
     auto reset = [&]()
@@ -323,74 +345,121 @@ int main()
 
         if (Xmove || Ymove)
         {
-            bool changed;
-            do
+            vector<RectangleShape*> rects;
+            vector<Text*> texts;
+            Animation ani(window);
+
+            auto addAni = [&](int X, int Y, int Xmove, int Ymove)
             {
-                changed = false;
+                rects.push_back(new RectangleShape(Vector2f(GWIDTH, GHEIGHT)));
+                rects.back()->setPosition(GWIDTH * X, GHEIGHT * Y);
+                rects.back()->setFillColor(Color::White);
+                rects.back()->setOutlineColor(Color::Yellow);
+                rects.back()->setOutlineThickness(2);
 
-                vector<RectangleShape*> rects;
-                vector<Text*> texts;
+                texts.push_back(new Text());
+                texts.back()->setFillColor(Color::Red);
+                texts.back()->setCharacterSize(GHEIGHT / 4);
+                texts.back()->setFont(font1);
+                texts.back()->setPosition(GWIDTH * (X + .5f), GHEIGHT * (Y + .5f));
+                texts.back()->setString(to_string(board[X][Y]));
+                texts.back()->setOrigin(texts.back()->getLocalBounds().width / 2, texts.back()->getLocalBounds().height / 2);
 
-                for (int X = 0; X < BWIDTH; X++)
+                ani.addTarget(Target(rects.back(), *rects.back(), Vector2f(GWIDTH * (X + Xmove), GHEIGHT * (Y + Ymove)), speed));
+                ani.addTarget(Target(texts.back(), *texts.back(), Vector2f(GWIDTH * (X + Xmove + .5f), GHEIGHT * (Y + Ymove + .5f)), speed));
+            };
+
+            auto runAni = [&]()
+            {
+                window.clear();
+                draw();
+
+                ani.start();
+
+                while (!rects.empty())
                 {
-                    moving = vector<vector<bool>>(BWIDTH, vector<bool>(BHEIGHT, false));
+                    delete rects.back();
+                    rects.pop_back();
+                }
+                while (!texts.empty())
+                {
+                    delete texts.back();
+                    texts.pop_back();
+                }
+            };
 
-                    for (int Y = 0; Y < BHEIGHT; Y++)
+            auto slide = [&]()
+            {
+                bool changed = false;
+                vector<vector<int>> temp(BWIDTH, vector<int>(BHEIGHT, 0));
+
+                do
+                {
+                    changed = false;
+                    temp = vector<vector<int>>(BWIDTH, vector<int>(BHEIGHT, 0));
+
+                    for (int X = 0;X < BWIDTH;X++)
                     {
-                        if (!(X + Xmove == -1 || X + Xmove == BWIDTH || Y + Ymove == -1 || Y + Ymove == BHEIGHT))
+                        for (int Y = 0;Y < BHEIGHT;Y++)
                         {
-                            if ((board[X + Xmove][Y + Ymove] == board[X][Y] || !board[X + Xmove][Y + Ymove]) && board[X][Y])
+                            if (X + Xmove != -1 && X + Xmove != BWIDTH && Y+Ymove != -1 && Y+Ymove != BHEIGHT && !board[X + Xmove][Y + Ymove] &&
+                                board[X][Y] && !temp[X+Xmove][Y+Ymove])
                             {
-                                // animation logics
-                                rects.push_back(new RectangleShape(Vector2f(GWIDTH, GHEIGHT)));
-                                rects.back()->setFillColor(Color::White);
-                                rects.back()->setOutlineColor(Color::Yellow);
-                                rects.back()->setOutlineThickness(2);
-                                rects.back()->setPosition(GWIDTH * X, GHEIGHT * Y);
+                                addAni(X, Y, Xmove, Ymove);
 
-                                texts.push_back(new Text());
-                                texts.back()->setFillColor(Color::Red);
-                                texts.back()->setCharacterSize(SHEIGHT / BHEIGHT / 4);
-                                texts.back()->setFont(font1);
-                                texts.back()->setString(to_string(board[X][Y]));
-                                texts.back()->setOrigin(texts.back()->getLocalBounds().width / 2, texts.back()->getLocalBounds().height / 2);
-                                texts.back()->setPosition(SWIDTH / BWIDTH * (X + .5f), SHEIGHT / BHEIGHT * (Y + .5f));
-
-                                moving[X][Y] = true;
-                                moving[X + Xmove][Y + Ymove] = true;
-                                animation.addTarget(Target(rects.back(), *rects.back(), Vector2f(GWIDTH * (X + Xmove), GHEIGHT * (Y + Ymove)), speed));
-                                animation.addTarget(Target(texts.back(), *texts.back(), Vector2f(GWIDTH * (X + Xmove + .5f), GHEIGHT * (Y + Ymove + .5f)), speed));
-
-                                int temp = board[X][Y];
-                                board[X][Y] = 0;
-                                board[X + Xmove][Y + Ymove] += temp;
                                 changed = true;
+                                temp[X + Xmove][Y + Ymove] = board[X][Y];
+                                board[X][Y] = 0;
+                            }
+                            else if (!temp[X][Y])
+                            {
+                                temp[X][Y] = board[X][Y];
                             }
                         }
                     }
 
-                    if (animation.targetLeft())
+                    if (ani.targetLeft())
                     {
-                        window.clear();
-                        draw();
-                        //window.display();
+                        runAni();
+                    }
 
-                        animation.start();
+                    board = vector<vector<int>>(temp);
+                } while (changed);
+            };
 
-                        while (!rects.empty())
+            auto pop = [&]()
+            {
+                vector<vector<int>> temp(BWIDTH, vector<int>(BHEIGHT, 0));
+
+                for (int X = 0;X < BWIDTH;X++)
+                {
+                    for (int Y = 0;Y < BHEIGHT;Y++)
+                    {
+                        if (X + Xmove != -1 && X + Xmove != BWIDTH && Y + Ymove != -1 && Y + Ymove != BHEIGHT &&
+                            board[X + Xmove][Y + Ymove] == board[X][Y] && board[X][Y])
                         {
-                            delete rects.back();
-                            rects.pop_back();
+                            addAni(X, Y, Xmove, Ymove);
+
+                            temp[X+Xmove][Y+Ymove] = board[X + Xmove][Y + Ymove] + board[X][Y];
+                            board[X][Y] = 0;
                         }
-
-                        while (!texts.empty())
+                        else if (!temp[X][Y])
                         {
-                            delete texts.back();
-                            texts.pop_back();
+                            temp[X][Y] = board[X][Y];
                         }
                     }
                 }
-            } while (changed);
+                if (ani.targetLeft())
+                {
+                    runAni();
+                }
+
+                board = vector<vector<int>>(temp);
+            };
+
+            slide();
+            pop();
+            slide();
 
             newNum();
 
