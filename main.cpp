@@ -494,7 +494,6 @@ int main()
             }
         }
 
-
         window.clear();
 
         draw(rect, text);
