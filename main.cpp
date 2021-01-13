@@ -174,7 +174,7 @@ int main()
     unsigned int t = GetTickCount64();
     srand(t);
 
-    RenderWindow window(VideoMode(SWIDTH, SHEIGHT), L"∏∞πŒ¿« 2048∑Œ «ı∏Ì∏¶ ¿Ô√Î«œ∂Û!");
+    RenderWindow window(VideoMode(SWIDTH, SHEIGHT), L"2048");
 
     Event event;
 
