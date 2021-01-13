@@ -388,6 +388,7 @@ int main()
                 break;
             }
         }
+
         won = false;
         for (int X = 0;X < BWIDTH;X++)
         {
@@ -397,60 +398,6 @@ int main()
                 {
                     won = true;
                 }
-            }
-        }
-
-        if (won)
-        {
-            texture.update(window);
-            shader.setUniform("texture", texture);
-            shader.setUniform("blur_radius", 0.002f);
-            sprite.setTexture(texture);
-
-            while (window.isOpen())
-            {
-                while (window.pollEvent(event))
-                {
-                    switch (event.type)
-                    {
-                    case Event::Closed:
-                        window.close();
-                        break;
-
-                    case Event::KeyPressed:
-                        switch (event.key.code)
-                        {
-                        case Keyboard::R:
-                            reset();
-                            goto top;
-                            break;
-                        }
-                        break;
-
-                    case Event::MouseMoved:
-                        mousePos = static_cast<Vector2f>(Mouse::getPosition(window));
-                        break;
-
-                    case Event::MouseButtonPressed:
-                        switch (event.mouseButton.button)
-                        {
-                        case Mouse::Button::Left:
-                            if (resetButton.getGlobalBounds().contains(mousePos))
-                            {
-                                reset();
-                            }
-                        }
-                        break;
-                    }
-                }
-
-                window.clear();
-
-                window.draw(sprite, &shader);
-
-                window.draw(wonText);
-
-                window.display();
             }
         }
 
@@ -587,6 +534,45 @@ int main()
         window.clear();
 
         draw(rect, text);
+
+        if (won)
+        {
+            texture.update(window);
+            shader.setUniform("texture", texture);
+            shader.setUniform("blur_radius", 0.002f);
+            sprite.setTexture(texture);
+
+            while (window.isOpen())
+            {
+                while (window.pollEvent(event))
+                {
+                    switch (event.type)
+                    {
+                    case Event::Closed:
+                        window.close();
+                        break;
+
+                    case Event::KeyPressed:
+                        switch (event.key.code)
+                        {
+                        case Keyboard::R:
+                            reset();
+                            goto top;
+                            break;
+                        }
+                        break;
+                    }
+                }
+
+                window.clear();
+
+                window.draw(sprite, &shader);
+
+                window.draw(wonText);
+
+                window.display();
+            }
+        }
 
         window.display();
 
