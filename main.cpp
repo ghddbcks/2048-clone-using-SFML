@@ -9,15 +9,22 @@
 #include "blur.hpp"
 
 #define SWIDTH 600
-#define SHEIGHT 600
+#define SHEIGHT 800
 
 #define BWIDTH 4
 #define BHEIGHT 4
 
-const float GWIDTH = SWIDTH / BWIDTH;
-const float GHEIGHT = SHEIGHT / BHEIGHT;
+#define BTWIDTH 300
+#define BTHEIGHT 100
 
-const float speed = 10000.f;
+#define BORDER 10
+
+#define WINNMBR 2048
+
+const float GWIDTH = SWIDTH / BWIDTH;
+const float GHEIGHT = GWIDTH;
+
+const float speed = 1000.f;
 
 using namespace std;
 using namespace sf;
@@ -89,8 +96,20 @@ public:
         float dt;
         bool done = false;
 
-        while (!done)
+        Event event;
+
+        while (!done && window.isOpen())
         {
+            while (window.pollEvent(event))
+            {
+                switch (event.type)
+                {
+                case Event::Closed:
+                    window.close();
+                    break;
+                }
+            }
+
             window.clear();
 
             window.draw(background);
@@ -120,7 +139,6 @@ public:
 
 void setRect(RectangleShape& rect, int X, int Y)
 {
-    cout << X << " " << Y << endl;
     rect.setPosition(GWIDTH * X, GHEIGHT * Y);
 }
 
@@ -133,16 +151,16 @@ void setText(Text& text, String string, int X, int Y)
 
 void resetText(Text& text, Font& font1)
 {
-    text.setFillColor(Color::Red);
-    text.setCharacterSize(SHEIGHT / BHEIGHT / 4);
+    text.setFillColor(Color(0xF28A2Eff));
+    text.setCharacterSize(GHEIGHT / 4);
     text.setFont(font1);
 }
 
 void resetRect(RectangleShape& rect)
 {
-    rect.setFillColor(Color::White);
-    rect.setOutlineColor(Color::Yellow);
-    rect.setOutlineThickness(2);
+    rect.setFillColor(Color(0x3702E0ff));
+    rect.setOutlineColor(Color(0x210B66ff));
+    rect.setOutlineThickness(BORDER);
 }
 
 int main()
@@ -176,14 +194,17 @@ int main()
     RectangleShape rect(Vector2f(GWIDTH, GHEIGHT));
     resetRect(rect);
 
+    RectangleShape back(Vector2f(SWIDTH, SHEIGHT));
+    back.setFillColor(Color(0x210B66ff));
+
     Text text;
     resetText(text, font1);
 
     Text wonText;
-    wonText.setFillColor(Color::Black);
+    wonText.setFillColor(Color(0x01940Aff));
     wonText.setCharacterSize(48);
     wonText.setFont(font2);
-    wonText.setPosition(SWIDTH/2, SHEIGHT/2);
+    wonText.setPosition(SWIDTH/2, SWIDTH/2);
     wonText.setString(L"당신 승리자이다!\n눌러 R키를 재시작!");
     wonText.setOrigin(wonText.getLocalBounds().width / 2, wonText.getLocalBounds().height / 2);
 
@@ -213,6 +234,23 @@ int main()
     vector<vector<bool>> moving;
 
     Animation animation(window);
+
+    int btnXScale = .5f;
+    int btnYScale = .5f;
+
+    RectangleShape resetButton(Vector2f(BTWIDTH, BTHEIGHT));
+    resetButton.setPosition(SWIDTH / 2 - BTWIDTH/2, SWIDTH + (SHEIGHT - SWIDTH) / 2 - BTHEIGHT / 2);
+    resetButton.setFillColor(Color(0x19E024ff));
+
+    Text resetBtnTxt;
+    resetBtnTxt.setFillColor(Color(0xF28A2Eff));
+    resetBtnTxt.setFont(font2);
+    resetBtnTxt.setString(L"재시작");
+    resetBtnTxt.setCharacterSize(50);
+    resetBtnTxt.setOrigin(resetBtnTxt.getLocalBounds().width / 2, resetBtnTxt.getLocalBounds().height / 2);
+    resetBtnTxt.setPosition(SWIDTH / 2, SWIDTH + (SHEIGHT-SWIDTH)/2);
+
+    Vector2f mousePos;
 
     auto newNum = [&]()
     {
@@ -264,11 +302,11 @@ int main()
 
         newNum();
     };
-    
-    
 
     auto draw = [&](RectangleShape& rect, Text& text)
     {
+        window.draw(back);
+
         for (int X = 0; X < BWIDTH; X++)
         {
             for (int Y = 0; Y < BHEIGHT; Y++)
@@ -282,6 +320,9 @@ int main()
                 }
             }
         }
+
+        window.draw(resetButton);
+        window.draw(resetBtnTxt);
     };
 
     reset();
@@ -324,6 +365,32 @@ int main()
                     break;
                 }
                 break;
+
+            case Event::MouseMoved:
+                mousePos = static_cast<Vector2f>(Mouse::getPosition(window));
+                break;
+
+            case Event::MouseButtonPressed:
+                switch (event.mouseButton.button)
+                {
+                case Mouse::Button::Left:
+                    if (resetButton.getGlobalBounds().contains(mousePos))
+                    {
+                        reset();
+                    }
+                }
+                break;
+            }
+        }
+        won = false;
+        for (int X = 0;X < BWIDTH;X++)
+        {
+            for (int Y = 0;Y < BHEIGHT;Y++)
+            {
+                if (board[X][Y] >= WINNMBR)
+                {
+                    won = true;
+                }
             }
         }
 
@@ -353,6 +420,21 @@ int main()
                             break;
                         }
                         break;
+
+                    case Event::MouseMoved:
+                        mousePos = static_cast<Vector2f>(Mouse::getPosition(window));
+                        break;
+
+                    case Event::MouseButtonPressed:
+                        switch (event.mouseButton.button)
+                        {
+                        case Mouse::Button::Left:
+                            if (resetButton.getGlobalBounds().contains(mousePos))
+                            {
+                                reset();
+                            }
+                        }
+                        break;
                     }
                 }
 
@@ -374,12 +456,13 @@ int main()
 
             auto addAni = [&](int X, int Y, int Xmove, int Ymove)
             {
-                rects.push_back(new RectangleShape(Vector2f(GWIDTH, GHEIGHT)));
+                rects.push_back(new RectangleShape(Vector2f(GWIDTH - BORDER, GHEIGHT - BORDER)));
                 resetRect(*rects.back());
                 setRect(*rects.back(), X, Y);
+                rects.back()->setOutlineThickness(0);
 
                 texts.push_back(new Text());
-                resetText(*texts.back(), font1);
+                resetText(*(texts.back()), font1);
                 setText(*texts.back(), to_string(board[X][Y]), X, Y);
 
                 ani.addTarget(Target(rects.back(), *rects.back(), Vector2f(GWIDTH * (X + Xmove), GHEIGHT * (Y + Ymove)), speed));
@@ -493,6 +576,8 @@ int main()
                 }
             }
         }
+
+        cout << 1 / clock.restart().asSeconds() << endl;
 
         window.clear();
 
