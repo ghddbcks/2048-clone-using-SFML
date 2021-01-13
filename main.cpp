@@ -107,7 +107,7 @@ public:
                 //window.display();
             }
 
-            window.display();
+            window.display(); 
         }
         targets = vector<Target>();
     }
@@ -118,12 +118,39 @@ public:
     }
 };
 
+void setRect(RectangleShape& rect, int X, int Y)
+{
+    cout << X << " " << Y << endl;
+    rect.setPosition(GWIDTH * X, GHEIGHT * Y);
+}
+
+void setText(Text& text, String string, int X, int Y)
+{
+    text.setPosition(GWIDTH * (X + .5f), GHEIGHT * (Y + .5f));
+    text.setString(string);
+    text.setOrigin(text.getLocalBounds().width / 2, text.getLocalBounds().height / 2);
+}
+
+void resetText(Text& text, Font& font1)
+{
+    text.setFillColor(Color::Red);
+    text.setCharacterSize(SHEIGHT / BHEIGHT / 4);
+    text.setFont(font1);
+}
+
+void resetRect(RectangleShape& rect)
+{
+    rect.setFillColor(Color::White);
+    rect.setOutlineColor(Color::Yellow);
+    rect.setOutlineThickness(2);
+}
+
 int main()
 {
     unsigned int t = GetTickCount64();
     srand(t);
 
-    RenderWindow window(VideoMode(SWIDTH, SHEIGHT), L"크고♂아름다운♂게이ㅁ");
+    RenderWindow window(VideoMode(SWIDTH, SHEIGHT), L"린민의 2048로 혁명를 쟁취하라!");
 
     Event event;
 
@@ -147,14 +174,10 @@ int main()
     }
 
     RectangleShape rect(Vector2f(GWIDTH, GHEIGHT));
-    rect.setFillColor(Color::White);
-    rect.setOutlineColor(Color::Yellow);
-    rect.setOutlineThickness(2);
+    resetRect(rect);
 
     Text text;
-    text.setFillColor(Color::Red);
-    text.setCharacterSize(SHEIGHT / BHEIGHT / 4);
-    text.setFont(font1);
+    resetText(text, font1);
 
     Text wonText;
     wonText.setFillColor(Color::Black);
@@ -241,20 +264,20 @@ int main()
 
         newNum();
     };
+    
+    
 
-    auto draw = [&]()
+    auto draw = [&](RectangleShape& rect, Text& text)
     {
         for (int X = 0; X < BWIDTH; X++)
         {
             for (int Y = 0; Y < BHEIGHT; Y++)
             {
-                    rect.setPosition(SWIDTH / BWIDTH * X, SHEIGHT / BHEIGHT * Y);
-                    window.draw(rect);
+                setRect(rect, X, Y);
+                window.draw(rect);
                 if (!moving[X][Y])
                 {
-                    text.setPosition(SWIDTH / BWIDTH * (X + .5f), SHEIGHT / BHEIGHT * (Y + .5f));
-                    text.setString(board[X][Y] ? to_string(board[X][Y]) : "");
-                    text.setOrigin(text.getLocalBounds().width / 2, text.getLocalBounds().height / 2);
+                    setText(text, board[X][Y] ? to_string(board[X][Y]) : "", X, Y);
                     window.draw(text);
                 }
             }
@@ -352,18 +375,12 @@ int main()
             auto addAni = [&](int X, int Y, int Xmove, int Ymove)
             {
                 rects.push_back(new RectangleShape(Vector2f(GWIDTH, GHEIGHT)));
-                rects.back()->setPosition(GWIDTH * X, GHEIGHT * Y);
-                rects.back()->setFillColor(Color::White);
-                rects.back()->setOutlineColor(Color::Yellow);
-                rects.back()->setOutlineThickness(2);
+                resetRect(*rects.back());
+                setRect(*rects.back(), X, Y);
 
                 texts.push_back(new Text());
-                texts.back()->setFillColor(Color::Red);
-                texts.back()->setCharacterSize(GHEIGHT / 4);
-                texts.back()->setFont(font1);
-                texts.back()->setPosition(GWIDTH * (X + .5f), GHEIGHT * (Y + .5f));
-                texts.back()->setString(to_string(board[X][Y]));
-                texts.back()->setOrigin(texts.back()->getLocalBounds().width / 2, texts.back()->getLocalBounds().height / 2);
+                resetText(*texts.back(), font1);
+                setText(*texts.back(), to_string(board[X][Y]), X, Y);
 
                 ani.addTarget(Target(rects.back(), *rects.back(), Vector2f(GWIDTH * (X + Xmove), GHEIGHT * (Y + Ymove)), speed));
                 ani.addTarget(Target(texts.back(), *texts.back(), Vector2f(GWIDTH * (X + Xmove + .5f), GHEIGHT * (Y + Ymove + .5f)), speed));
@@ -372,7 +389,7 @@ int main()
             auto runAni = [&]()
             {
                 window.clear();
-                draw();
+                draw(rect, text);
 
                 ani.start();
 
@@ -480,7 +497,7 @@ int main()
 
         window.clear();
 
-        draw();
+        draw(rect, text);
 
         window.display();
 
