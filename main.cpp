@@ -28,8 +28,10 @@ const float speed = 1000.f;
 using namespace std;
 using namespace sf;
 
-const Color numberClr = Color(0xd77256ff);
-const Color tileClr = Color(0xF9F7EAff);
+const Color numberClr = Color(0xD77256ff);
+const int colorCnt = 5;
+const Color tileClr[colorCnt] = { Color(0xF0D0C8ff), Color(0xE3D0B3ff), Color(0xCCE3B3ff), Color(0xFAF5D2ff), Color(0xC8FDDAff) };
+const Color blkTilClr = Color(0xffffffff);
 const Color borderClr = Color(0xD2E0D1ff);
 const Color buttonClr = Color(0x35505eff);
 const Color textClr = Color(0x171C3aff);
@@ -143,9 +145,22 @@ public:
     }
 };
 
-void setRect(RectangleShape& rect, int X, int Y)
+int lg(int powerOfTwo)
+{
+    int temp = powerOfTwo;
+    int i = 0;
+    while (temp != 1)
+    {
+        temp = temp >> 1;
+        i++;
+    }
+    return i;
+}
+
+void setRect(RectangleShape& rect, int X, int Y, int number)
 {
     rect.setPosition(GWIDTH * X, GHEIGHT * Y);
+    rect.setFillColor(number? tileClr[lg(number) % colorCnt] : blkTilClr);
 }
 
 void setText(Text& text, String string, int X, int Y)
@@ -164,7 +179,6 @@ void resetText(Text& text, Font& font1)
 
 void resetRect(RectangleShape& rect)
 {
-    rect.setFillColor(tileClr);
     rect.setOutlineColor(borderClr);
     rect.setOutlineThickness(BORDER);
 }
@@ -317,7 +331,7 @@ int main()
         {
             for (int Y = 0; Y < BHEIGHT; Y++)
             {
-                setRect(rect, X, Y);
+                setRect(rect, X, Y, board[X][Y]);
                 window.draw(rect);
                 if (!moving[X][Y])
                 {
@@ -411,7 +425,7 @@ int main()
             {
                 rects.push_back(new RectangleShape(Vector2f(GWIDTH - BORDER, GHEIGHT - BORDER)));
                 resetRect(*rects.back());
-                setRect(*rects.back(), X, Y);
+                setRect(*rects.back(), X, Y, board[X][Y]);
                 rects.back()->setOutlineThickness(0);
 
                 texts.push_back(new Text());
