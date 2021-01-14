@@ -498,9 +498,11 @@ int main()
             {
                 vector<vector<int>> temp(BWIDTH, vector<int>(BHEIGHT, 0));
 
-                for (int X = 0;X < BWIDTH;X++)
+                for (int X = (Xmove == 1? BWIDTH-1 : 0);X != (Xmove == 1? -1 : BWIDTH);X += (Xmove == 1? -1 : 1))
+                    // if Xmove == 1, this works as 'for (int X=BWIDTH-1;X>-1;X--)' and 'for (int X=0;X<BWIDTH;X++)' if Xmove == -1.
                 {
-                    for (int Y = 0;Y < BHEIGHT;Y++)
+                    for (int Y = (Ymove == 1 ? BHEIGHT - 1 : 0);Y != (Ymove == 1 ? -1 : BHEIGHT);Y += (Ymove == 1 ? -1 : 1))
+                    // if Ymove == 1, this works as 'for (int Y=BHEIGHT-1;Y>-1;Y--)' and 'for (int Y=0;X<BHEIGHT;Y++)' if Ymove == -1.
                     {
                         if (X + Xmove != -1 && X + Xmove != BWIDTH && Y + Ymove != -1 && Y + Ymove != BHEIGHT &&
                             board[X + Xmove][Y + Ymove] == board[X][Y] && board[X][Y])
