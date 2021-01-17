@@ -37,7 +37,7 @@ const Color buttonClr = Color(0x35505eff);
 const Color textClr = Color(0x171C3aff);
 const Color backgroundClr = Color(0xd2d0d1ff);
 
-class Target
+class AnimTarget
 {
 private:
     Drawable* target;
@@ -47,7 +47,7 @@ private:
     Vector2f dir;
     bool done;
 public:
-    Target(Drawable* target, Transformable& trans, Vector2f goal, float speed) : 
+    AnimTarget(Drawable* target, Transformable& trans, Vector2f goal, float speed) : 
         trans(trans), goal(goal), speed(speed), done(false), target(target)
     {
         dir = goal - trans.getPosition();
@@ -86,7 +86,7 @@ public:
 class Animation
 {
 private:
-    vector<Target> targets;
+    vector<AnimTarget> targets;
     RenderWindow& window;
     Sprite background;
     Texture texture;
@@ -98,7 +98,7 @@ public:
         texture.create(SWIDTH, SHEIGHT);
     }
 
-    void addTarget(Target target)
+    void addTarget(AnimTarget target)
     {
         targets.push_back(target);
     }
@@ -144,7 +144,7 @@ public:
 
             window.display(); 
         }
-        targets = vector<Target>();
+        targets = vector<AnimTarget>();
     }
 
     bool targetLeft()
@@ -440,8 +440,8 @@ int main()
                 resetText(*(texts.back()), font1);
                 setText(*texts.back(), board[X][Y]? to_string(board[X][Y]) : "", X, Y);
 
-                ani.addTarget(Target(rects.back(), *rects.back(), Vector2f(GWIDTH * (Xdest), GHEIGHT * (Ydest)), speed));
-                ani.addTarget(Target(texts.back(), *texts.back(), Vector2f(GWIDTH * (Xdest + .5f), GHEIGHT * (Ydest + .5f)), speed));
+                ani.addTarget(AnimTarget(rects.back(), *rects.back(), Vector2f(GWIDTH * (Xdest), GHEIGHT * (Ydest)), speed));
+                ani.addTarget(AnimTarget(texts.back(), *texts.back(), Vector2f(GWIDTH * (Xdest + .5f), GHEIGHT * (Ydest + .5f)), speed));
             };
 
             auto runAni = [&]()
