@@ -31,9 +31,6 @@ private:
 class Animation
 {
 public:
-    //Animation(RenderWindow& window, int SWIDTH, int SHEIGHT);
-
-
     Animation(RenderWindow& window);
 
     void addTarget(AnimTarget target);

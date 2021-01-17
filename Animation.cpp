@@ -11,7 +11,7 @@ AnimTarget::AnimTarget(Drawable* target, Transformable& trans, Vector2f goal, fl
     dir = goal - trans.getPosition();
     dir = dir / sqrt(dir.x * dir.x + dir.y * dir.y);
 
-    if (trans.getPosition() == goal)
+    if (trans.getPosition() == goal) // if start = end
     {
         done = true;
     }
@@ -22,15 +22,17 @@ void AnimTarget::update(float dt)
     if (!done)
     {
         trans.setPosition(trans.getPosition() + currentSpeed * dt * dir);
-        Vector2f diffDir = goal - trans.getPosition();
+
+        Vector2f diffDir = goal - trans.getPosition(); // current position -> goal
         diffDir = diffDir / sqrt(diffDir.x * diffDir.x + diffDir.y * diffDir.y);
-        if ((diffDir.x * dir.x + diffDir.y * dir.y) < 0)
+
+        if ((diffDir.x * dir.x + diffDir.y * dir.y) < 0) // if it's arrived
         {
             done = true;
             trans.setPosition(goal);
         }
 
-        if (currentSpeed < speed)
+        if (currentSpeed < speed) // accelation
         {
             currentSpeed += accelation * dt;
         }
@@ -50,7 +52,7 @@ Drawable* AnimTarget::getDrawTarget()
 Animation::Animation(RenderWindow& window) : 
     targets(vector<AnimTarget>()), window(window), background(), texture(), done(false)
 {
-    texture.create(SWIDTH, SHEIGHT);
+    texture.create(SWIDTH, SHEIGHT); // screen sized texture
 }
 
 void Animation::addTarget(AnimTarget target)
@@ -69,7 +71,7 @@ void Animation::start()
 
     Event event;
 
-    while (!(done || !window.isOpen()))
+    while (!done && window.isOpen()) // end loop if animation is all over or user clicked on close button
     {
         while (window.pollEvent(event))
         {
@@ -87,7 +89,7 @@ void Animation::start()
 
         dt = clock.restart().asSeconds();
 
-        done = true;
+        done = true; // true if all animations are done
         for (AnimTarget& elem : targets)
         {
             elem.update(dt);
@@ -97,7 +99,7 @@ void Animation::start()
 
         window.display();
     }
-    targets = vector<AnimTarget>();
+    targets = vector<AnimTarget>(); // empty the vector target
 }
 
 bool Animation::targetLeft()

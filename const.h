@@ -1,17 +1,17 @@
 #ifndef CONST_H
 #define CONST_H
 
-#define SWIDTH 600
-#define SHEIGHT 800
+#define SWIDTH 600 // screen width
+#define SHEIGHT 800 // screen height
 
-#define BWIDTH 4
-#define BHEIGHT 4
+#define BWIDTH 4 // board width
+#define BHEIGHT 4 // board height
 
-#define BTWIDTH 300
-#define BTHEIGHT 100
+#define BTWIDTH 300 // button width
+#define BTHEIGHT 100 // button height
 
-#define BORDER 10
+#define BORDER 10 // border width
 
-#define WINNMBR 2048
+#define WINNMBR 2048 // goal number
 
 #endif

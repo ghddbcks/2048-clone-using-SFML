@@ -13,12 +13,13 @@
 const float GWIDTH = SWIDTH / BWIDTH;
 const float GHEIGHT = GWIDTH;
 
-const float speed = 1000.f;
-const float accel = 5000.f;
+const float speed = 1000.f; // animation speed
+const float accel = 5000.f; // animation accel
 
 using namespace std;
 using namespace sf;
 
+// color scheme
 const Color numberClr = Color(0xD77256ff);
 const int colorCnt = 5;
 const Color tileClr[colorCnt] = { Color(0xF0D0C8ff), Color(0xE3D0B3ff), Color(0xCCE3B3ff), Color(0xFAF5D2ff), Color(0xC8FDDAff) };
@@ -28,7 +29,7 @@ const Color buttonClr = Color(0x35505eff);
 const Color textClr = Color(0x171C3aff);
 const Color backgroundClr = Color(0xd2d0d1ff);
 
-int lg(int powerOfTwo)
+int lb/*lg is incorrect.*/(int powerOfTwo) // lb(2^n) = n
 {
     int temp = powerOfTwo;
     int i = 0;
@@ -43,7 +44,8 @@ int lg(int powerOfTwo)
 void setRect(RectangleShape& rect, int X, int Y, int number)
 {
     rect.setPosition(GWIDTH * X, GHEIGHT * Y);
-    rect.setFillColor(number? tileClr[lg(number) % colorCnt] : blkTilClr);
+    rect.setFillColor(number? tileClr[lb(number) % colorCnt] : blkTilClr);
+    // select color from color list depending on the number on it.
 }
 
 void setText(Text& text, String string, int X, int Y)
@@ -163,7 +165,9 @@ int main()
     scoreText.setString("0");
     scoreText.setCharacterSize(50);
 
-    auto newNum = [&]()
+    auto newNum = [&]() 
+    // place new number on random empty location. 
+    // for prevent infinite-loop, all location in board that is empty is precalculated, and randomly pick one of these.
     {
         int X;
         int Y;
@@ -174,7 +178,7 @@ int main()
         {
             for (int Y = 0;Y < BHEIGHT;Y++)
             {
-                if (!board[X][Y])
+                if (!board[X][Y]) // if (X, Y) location is empty (0)
                 {
                     list.push_back(make_pair(X, Y));
                 }
@@ -190,7 +194,7 @@ int main()
         X = newSqr.first;
         Y = newSqr.second;
 
-        if (rand() % 100 < 10)
+        if (rand() % 100 < 10) // 4 spawns for 10% chance
         {
             board[X][Y] = 4;
         }
@@ -263,6 +267,7 @@ int main()
                 
             case Event::KeyPressed:
                 switch (event.key.code)
+                    // always Xmove == 0 && Ymove == 0 or if Xmove != 0 then Ymove == 0, and if Ymove != 0 then Xmove == 0
                 {
                 case Keyboard::Left:
                     Xmove = -1;
@@ -354,7 +359,7 @@ int main()
                 }
             };
 
-            auto inside = [&](int X, int Y) -> bool
+            auto inside = [&](int X, int Y) -> bool // return true whether the location (X, Y) is not out of boundary
             {
                 return !(X == -1 || Y == -1 || X >= BWIDTH || Y >= BHEIGHT);
             };
@@ -379,7 +384,7 @@ int main()
                                 (
                                     !board[Xdest + Xmove][Ydest + Ymove] || board[Xdest + Xmove][Ydest + Ymove] == board[X][Y]
                                 )
-                            )
+                            ) // destination is not out of boundary and destination contains 0 or same number as started point
                             {
                                 Xdest += Xmove;
                                 Ydest += Ymove;
@@ -443,11 +448,11 @@ int main()
 
         draw(rect, text);
 
-        if (won)
+        if (true)
         {
             texture.update(window);
             shader.setUniform("texture", texture);
-            shader.setUniform("blur_radius", 0.002f);
+            shader.setUniform("offsetFactor", Glsl::Vec2(.002f, .002f));
             sprite.setTexture(texture);
 
             while (window.isOpen())
