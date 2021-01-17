@@ -52,17 +52,25 @@ public:
     {
         dir = goal - trans.getPosition();
         dir = dir / sqrt(dir.x * dir.x + dir.y * dir.y);
+
+        if (trans.getPosition() == goal)
+        {
+            done = true;
+        }
     };
 
     void update(float dt)
     {
-        trans.setPosition(trans.getPosition() + speed * dt * dir);
-        Vector2f diffDir = goal - trans.getPosition();
-        diffDir = diffDir / sqrt(diffDir.x * diffDir.x + diffDir.y * diffDir.y);
-        if ((diffDir.x * dir.x + diffDir.y * dir.y) < 0)
+        if (!done)
         {
-            done = true;
-            trans.setPosition(goal);
+            trans.setPosition(trans.getPosition() + speed * dt * dir);
+            Vector2f diffDir = goal - trans.getPosition();
+            diffDir = diffDir / sqrt(diffDir.x * diffDir.x + diffDir.y * diffDir.y);
+            if ((diffDir.x * dir.x + diffDir.y * dir.y) < 0)
+            {
+                done = true;
+                trans.setPosition(goal);
+            }
         }
     }
     bool isDone() 
@@ -106,7 +114,7 @@ public:
 
         Event event;
 
-        while (!done && window.isOpen())
+        while (!(done || !window.isOpen()))
         {
             while (window.pollEvent(event))
             {
@@ -323,7 +331,7 @@ int main()
         newNum();
     };
 
-    auto draw = [&](RectangleShape& rect, Text& text)
+    auto draw = [&](RectangleShape& rect, Text& text, bool drawTile = true)
     {
         window.draw(back);
 
@@ -331,11 +339,11 @@ int main()
         {
             for (int Y = 0; Y < BHEIGHT; Y++)
             {
-                setRect(rect, X, Y, board[X][Y]);
+                setRect(rect, X, Y, drawTile? board[X][Y] : 0);
                 window.draw(rect);
                 if (!moving[X][Y])
                 {
-                    setText(text, board[X][Y] ? to_string(board[X][Y]) : "", X, Y);
+                    setText(text, board[X][Y] && drawTile ? to_string(board[X][Y]) : "", X, Y);
                     window.draw(text);
                 }
             }
@@ -421,7 +429,7 @@ int main()
             vector<Text*> texts;
             Animation ani(window);
 
-            auto addAni = [&](int X, int Y, int Xmove, int Ymove)
+            auto addAni = [&](int X, int Y, int Xdest, int Ydest)
             {
                 rects.push_back(new RectangleShape(Vector2f(GWIDTH - BORDER, GHEIGHT - BORDER)));
                 resetRect(*rects.back());
@@ -430,16 +438,16 @@ int main()
 
                 texts.push_back(new Text());
                 resetText(*(texts.back()), font1);
-                setText(*texts.back(), to_string(board[X][Y]), X, Y);
+                setText(*texts.back(), board[X][Y]? to_string(board[X][Y]) : "", X, Y);
 
-                ani.addTarget(Target(rects.back(), *rects.back(), Vector2f(GWIDTH * (X + Xmove), GHEIGHT * (Y + Ymove)), speed));
-                ani.addTarget(Target(texts.back(), *texts.back(), Vector2f(GWIDTH * (X + Xmove + .5f), GHEIGHT * (Y + Ymove + .5f)), speed));
+                ani.addTarget(Target(rects.back(), *rects.back(), Vector2f(GWIDTH * (Xdest), GHEIGHT * (Ydest)), speed));
+                ani.addTarget(Target(texts.back(), *texts.back(), Vector2f(GWIDTH * (Xdest + .5f), GHEIGHT * (Ydest + .5f)), speed));
             };
 
             auto runAni = [&]()
             {
                 window.clear();
-                draw(rect, text);
+                draw(rect, text, false);
 
                 ani.start();
 
@@ -455,79 +463,67 @@ int main()
                 }
             };
 
-            auto slide = [&]()
+            auto inside = [&](int X, int Y) -> bool
             {
-                bool changed = false;
-                vector<vector<int>> temp(BWIDTH, vector<int>(BHEIGHT, 0));
-
-                do
-                {
-                    changed = false;
-                    temp = vector<vector<int>>(BWIDTH, vector<int>(BHEIGHT, 0));
-
-                    for (int X = 0;X < BWIDTH;X++)
-                    {
-                        for (int Y = 0;Y < BHEIGHT;Y++)
-                        {
-                            if (X + Xmove != -1 && X + Xmove != BWIDTH && Y+Ymove != -1 && Y+Ymove != BHEIGHT && !board[X + Xmove][Y + Ymove] &&
-                                board[X][Y] && !temp[X+Xmove][Y+Ymove])
-                            {
-                                addAni(X, Y, Xmove, Ymove);
-
-                                changed = true;
-                                temp[X + Xmove][Y + Ymove] = board[X][Y];
-                                board[X][Y] = 0;
-                            }
-                            else if (!temp[X][Y])
-                            {
-                                temp[X][Y] = board[X][Y];
-                            }
-                        }
-                    }
-
-                    if (ani.targetLeft())
-                    {
-                        runAni();
-                    }
-
-                    board = vector<vector<int>>(temp);
-                } while (changed);
+                return !(X == -1 || Y == -1 || X >= BWIDTH || Y >= BHEIGHT);
             };
 
-            auto pop = [&]()
+            auto slide = [&]()
             {
-                vector<vector<int>> temp(BWIDTH, vector<int>(BHEIGHT, 0));
+                vector<vector<bool>> drawn = vector<vector<bool>>(BWIDTH, vector<bool>(BHEIGHT, false));
 
-                for (int X = (Xmove == 1? BWIDTH-1 : 0);X != (Xmove == 1? -1 : BWIDTH);X += (Xmove == 1? -1 : 1))
+                for (int X = (Xmove == 1 ? BWIDTH - 1 : 0);X != (Xmove == 1 ? -1 : BWIDTH);X += (Xmove == 1 ? -1 : 1))
                     // if Xmove == 1, this works as 'for (int X=BWIDTH-1;X>-1;X--)' and 'for (int X=0;X<BWIDTH;X++)' if Xmove == -1.
                 {
                     for (int Y = (Ymove == 1 ? BHEIGHT - 1 : 0);Y != (Ymove == 1 ? -1 : BHEIGHT);Y += (Ymove == 1 ? -1 : 1))
-                    // if Ymove == 1, this works as 'for (int Y=BHEIGHT-1;Y>-1;Y--)' and 'for (int Y=0;X<BHEIGHT;Y++)' if Ymove == -1.
+                        // if Ymove == 1, this works as 'for (int Y=BHEIGHT-1;Y>-1;Y--)' and 'for (int Y=0;X<BHEIGHT;Y++)' if Ymove == -1.
                     {
-                        if (X + Xmove != -1 && X + Xmove != BWIDTH && Y + Ymove != -1 && Y + Ymove != BHEIGHT &&
-                            board[X + Xmove][Y + Ymove] == board[X][Y] && board[X][Y])
+                        if (board[X][Y])
                         {
-                            addAni(X, Y, Xmove, Ymove);
+                            int Xdest = X;
+                            int Ydest = Y;
 
-                            temp[X+Xmove][Y+Ymove] = board[X + Xmove][Y + Ymove] + board[X][Y];
-                            board[X][Y] = 0;
-                        }
-                        else if (!temp[X][Y])
-                        {
-                            temp[X][Y] = board[X][Y];
+                            while (
+                                inside(Xdest + Xmove, Ydest + Ymove) && board[X][Y] && 
+                                (
+                                    !board[Xdest + Xmove][Ydest + Ymove] || board[Xdest + Xmove][Ydest + Ymove] == board[X][Y]
+                                )
+                            )
+                            {
+                                Xdest += Xmove;
+                                Ydest += Ymove;
+                            }
+
+                            if (!drawn[X][Y])
+                            {
+                                addAni(X, Y, Xdest, Ydest);
+                            }
+
+                            if (Xdest != X || Ydest != Y)
+                            {
+                                if (board[X][Y])
+                                {
+                                    drawn[Xdest][Ydest] = true;
+                                    if (board[Xdest][Ydest])
+                                    {
+                                        addAni(Xdest, Ydest, Xdest, Ydest);
+                                    }
+                                }
+
+                                board[Xdest][Ydest] += board[X][Y];
+
+                                board[X][Y] = 0;
+                            }
                         }
                     }
                 }
+
                 if (ani.targetLeft())
                 {
                     runAni();
                 }
-
-                board = vector<vector<int>>(temp);
             };
 
-            slide();
-            pop();
             slide();
 
             newNum();
