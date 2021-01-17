@@ -14,7 +14,7 @@ const float GWIDTH = SWIDTH / BWIDTH;
 const float GHEIGHT = GWIDTH;
 
 const float speed = 1000.f;
-const float accel = 1000.f;
+const float accel = 5000.f;
 
 using namespace std;
 using namespace sf;
