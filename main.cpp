@@ -1,25 +1,14 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <cstdlib>
-#include <Windows.h>
 #include <vector>
 #include <functional>
+#include <ctime>
 #include "ConnectionIii-Rj3W.hpp"
 #include "nanum.hpp"
 #include "blur.hpp"
-
-#define SWIDTH 600
-#define SHEIGHT 800
-
-#define BWIDTH 4
-#define BHEIGHT 4
-
-#define BTWIDTH 300
-#define BTHEIGHT 100
-
-#define BORDER 10
-
-#define WINNMBR 2048
+#include "Animation.h"
+#include "const.h"
 
 const float GWIDTH = SWIDTH / BWIDTH;
 const float GHEIGHT = GWIDTH;
@@ -36,122 +25,6 @@ const Color borderClr = Color(0xD2E0D1ff);
 const Color buttonClr = Color(0x35505eff);
 const Color textClr = Color(0x171C3aff);
 const Color backgroundClr = Color(0xd2d0d1ff);
-
-class AnimTarget
-{
-private:
-    Drawable* target;
-    Transformable& trans;
-    Vector2f goal;
-    float speed;
-    Vector2f dir;
-    bool done;
-public:
-    AnimTarget(Drawable* target, Transformable& trans, Vector2f goal, float speed) : 
-        trans(trans), goal(goal), speed(speed), done(false), target(target)
-    {
-        dir = goal - trans.getPosition();
-        dir = dir / sqrt(dir.x * dir.x + dir.y * dir.y);
-
-        if (trans.getPosition() == goal)
-        {
-            done = true;
-        }
-    };
-
-    void update(float dt)
-    {
-        if (!done)
-        {
-            trans.setPosition(trans.getPosition() + speed * dt * dir);
-            Vector2f diffDir = goal - trans.getPosition();
-            diffDir = diffDir / sqrt(diffDir.x * diffDir.x + diffDir.y * diffDir.y);
-            if ((diffDir.x * dir.x + diffDir.y * dir.y) < 0)
-            {
-                done = true;
-                trans.setPosition(goal);
-            }
-        }
-    }
-    bool isDone() 
-    {
-        return done;
-    }
-    Drawable* getDrawTarget()
-    {
-        return target;
-    }
-};
-
-class Animation
-{
-private:
-    vector<AnimTarget> targets;
-    RenderWindow& window;
-    Sprite background;
-    Texture texture;
-    bool done;
-
-public:
-    Animation(RenderWindow& window) : targets(), window(window), background(), texture(), done(false) 
-    {
-        texture.create(SWIDTH, SHEIGHT);
-    }
-
-    void addTarget(AnimTarget target)
-    {
-        targets.push_back(target);
-    }
-
-    void start()
-    {
-        texture.update(window);
-        background.setTexture(texture);
-
-        Clock clock;
-        float dt;
-        bool done = false;
-
-        Event event;
-
-        while (!(done || !window.isOpen()))
-        {
-            while (window.pollEvent(event))
-            {
-                switch (event.type)
-                {
-                case Event::Closed:
-                    window.close();
-                    break;
-                }
-            }
-
-            window.clear();
-
-            window.draw(background);
-
-            dt = clock.restart().asSeconds();
-
-            done = true;
-            for (auto& elem : targets)
-            {
-                //window.clear();
-                elem.update(dt);
-                done = done && elem.isDone();
-                window.draw(*(elem.getDrawTarget()));
-                //window.display();
-            }
-
-            window.display(); 
-        }
-        targets = vector<AnimTarget>();
-    }
-
-    bool targetLeft()
-    {
-        return !targets.empty();
-    }
-};
 
 int lg(int powerOfTwo)
 {
@@ -193,7 +66,7 @@ void resetRect(RectangleShape& rect)
 
 int main()
 {
-    unsigned int t = GetTickCount64();
+    unsigned int t = time(NULL);
     srand(t);
 
     RenderWindow window(VideoMode(SWIDTH, SHEIGHT), L"2048");
@@ -280,6 +153,14 @@ int main()
 
     Vector2f mousePos;
 
+    int score;
+
+    Text scoreText;
+    scoreText.setFillColor(textClr);
+    scoreText.setFont(font1);
+    scoreText.setString("0");
+    scoreText.setCharacterSize(50);
+
     auto newNum = [&]()
     {
         int X;
@@ -329,6 +210,8 @@ int main()
         moving = vector<vector<bool>>(BWIDTH, vector<bool>(BHEIGHT, false));
 
         newNum();
+
+        score = 0;
     };
 
     auto draw = [&](RectangleShape& rect, Text& text, bool drawTile = true)
@@ -351,6 +234,13 @@ int main()
 
         window.draw(resetButton);
         window.draw(resetBtnTxt);
+        window.draw(scoreText);
+    };
+
+    auto addScore = [&](int dS)
+    {
+        score += dS;
+        scoreText.setString(to_string(score));
     };
 
     reset();
@@ -511,6 +401,11 @@ int main()
                                 }
 
                                 board[Xdest][Ydest] += board[X][Y];
+
+                                if (board[Xdest][Ydest] > 2 && board[X][Y])
+                                {
+                                    addScore(board[Xdest][Ydest]);
+                                }
 
                                 board[X][Y] = 0;
                             }
