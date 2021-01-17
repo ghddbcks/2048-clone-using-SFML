@@ -324,7 +324,6 @@ int main()
                 rects.push_back(new RectangleShape(Vector2f(GWIDTH - BORDER, GHEIGHT - BORDER)));
                 resetRect(*rects.back());
                 setRect(*rects.back(), X, Y, board[X][Y]);
-                rects.back()->setOutlineThickness(0);
 
                 texts.push_back(new Text());
                 resetText(*(texts.back()), font1);
