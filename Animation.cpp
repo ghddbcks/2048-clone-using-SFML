@@ -6,7 +6,7 @@
 using namespace std;
 using namespace sf;
 
-AnimTarget::AnimTarget(Drawable* target, Transformable& trans, Vector2f goal, float speed) : trans(trans), goal(goal), speed(speed), done(false), target(target)
+AnimTarget::AnimTarget(Drawable* target, Transformable& trans, Vector2f goal, float speed, float accel) : trans(trans), goal(goal), speed(speed), done(false), target(target), accelation(accel), currentSpeed(0)
 {
     dir = goal - trans.getPosition();
     dir = dir / sqrt(dir.x * dir.x + dir.y * dir.y);
@@ -21,13 +21,18 @@ void AnimTarget::update(float dt)
 {
     if (!done)
     {
-        trans.setPosition(trans.getPosition() + speed * dt * dir);
+        trans.setPosition(trans.getPosition() + currentSpeed * dt * dir);
         Vector2f diffDir = goal - trans.getPosition();
         diffDir = diffDir / sqrt(diffDir.x * diffDir.x + diffDir.y * diffDir.y);
         if ((diffDir.x * dir.x + diffDir.y * dir.y) < 0)
         {
             done = true;
             trans.setPosition(goal);
+        }
+
+        if (currentSpeed < speed)
+        {
+            currentSpeed += accelation * dt;
         }
     }
 }

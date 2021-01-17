@@ -10,7 +10,7 @@ using namespace sf;
 class AnimTarget
 {
 public:
-    AnimTarget(Drawable* target, Transformable& trans, Vector2f goal, float speed);
+    AnimTarget(Drawable* target, Transformable& trans, Vector2f goal, float speed, float accel);
 
     void update(float dt);
     bool isDone();
@@ -22,6 +22,8 @@ private:
     Transformable& trans;
     Vector2f goal;
     float speed;
+    float accelation;
+    float currentSpeed;
     Vector2f dir;
     bool done;
 };

@@ -14,6 +14,8 @@ const float GWIDTH = SWIDTH / BWIDTH;
 const float GHEIGHT = GWIDTH;
 
 const float speed = 1000.f;
+const float accel = 1000.f;
+
 using namespace std;
 using namespace sf;
 
@@ -329,8 +331,8 @@ int main()
                 resetText(*(texts.back()), font1);
                 setText(*texts.back(), board[X][Y]? to_string(board[X][Y]) : "", X, Y);
 
-                ani.addTarget(AnimTarget(rects.back(), *rects.back(), Vector2f(GWIDTH * (Xdest), GHEIGHT * (Ydest)), speed));
-                ani.addTarget(AnimTarget(texts.back(), *texts.back(), Vector2f(GWIDTH * (Xdest + .5f), GHEIGHT * (Ydest + .5f)), speed));
+                ani.addTarget(AnimTarget(rects.back(), *rects.back(), Vector2f(GWIDTH * (Xdest), GHEIGHT * (Ydest)), speed, accel));
+                ani.addTarget(AnimTarget(texts.back(), *texts.back(), Vector2f(GWIDTH * (Xdest + .5f), GHEIGHT * (Ydest + .5f)), speed, accel));
             };
 
             auto runAni = [&]()
